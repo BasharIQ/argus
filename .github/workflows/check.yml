@@ -1,0 +1,18 @@
+name: Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: swift --version
+      - name: Run checks
+        run: sh scripts/check.sh
+      - name: Build release app
+        run: sh scripts/make-app.sh release
