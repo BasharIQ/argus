@@ -204,6 +204,23 @@ final class CodexAdapterTests {
         try expectEqual(session.question, "Leave conflicts blank or use the most common value?")
     }
 
+    func asyncQuestionSurvivesMidnightBehindLongWork() throws {
+        let age: TimeInterval = 13 * 60 * 60
+        let output = String(repeating: "x", count: 1000)
+        let work = (0..<100).flatMap { i in [
+            responseItem(age, #"{"type":"custom_tool_call","name":"exec","call_id":"c\#(i)"}"#),
+            responseItem(age, #"{"type":"custom_tool_call_output","call_id":"c\#(i)","output":"\#(output)"}"#),
+        ] }
+        try writeRollout(age: age, lines: [
+            meta(age: age),
+            responseItem(age, #"{"type":"function_call","name":"request_user_input_async","call_id":"q1","arguments":"{\"questions\":[{\"title\":\"Which region?\"}]}"}"#),
+            responseItem(age, #"{"type":"function_call_output","call_id":"q1","output":"{\"accepted\":true}"}"#),
+        ] + work + [event(age, "task_complete")])
+        let session = try required(adapter().scan().sessions.first, "An open question far behind later work must survive midnight")
+        try expectEqual(session.state, .needsInput)
+        try expectEqual(session.question, "Which region?")
+    }
+
     func userReplyClearsAsyncQuestion() throws {
         try writeRollout(age: 5, lines: [
             meta(age: 600),

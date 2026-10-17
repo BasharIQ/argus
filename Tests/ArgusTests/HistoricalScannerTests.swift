@@ -92,6 +92,20 @@ final class HistoricalScannerTests {
         try expectEqual(session.question, "Choose a deployment.")
     }
 
+    func questionBehindLargeSiblingResultsSurvivesOvernight() throws {
+        let yesterday = now.addingTimeInterval(-26 * 60 * 60)
+        let timestamp = ISO8601DateFormatter().string(from: yesterday)
+        let calls = (1...3).map { assistant(at: yesterday, blocks: #"{"type":"tool_use","id":"b\#($0)","name":"Bash","input":{}}"#) }
+        let results = (1...3).map {
+            #"{"type":"user","timestamp":"\#(timestamp)","message":{"content":[{"type":"tool_result","tool_use_id":"b\#($0)","content":"\#(String(repeating: "x", count: 30_000))"}]}}"#
+        }
+        try write(calls + [question(at: yesterday)] + results, mtime: yesterday)
+        let session = try required(ClaudeCodeAdapter(root: root, clock: { [now] in now }).scan().sessions.first,
+                                   "An open question behind large sibling results must survive overnight")
+        try expectEqual(session.state, .needsInput)
+        try expectEqual(session.question, "Choose a deployment.")
+    }
+
     func incompleteFinalRecordForcesFullRead() throws {
         let yesterday = now.addingTimeInterval(-26 * 60 * 60)
         let finished = assistant(at: yesterday, blocks: #"{"type":"text","text":"Finished."}"#)

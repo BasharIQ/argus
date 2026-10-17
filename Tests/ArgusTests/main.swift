@@ -103,6 +103,7 @@ runTest("ClaudeCodeAdapterTests.questionStaysOpenBehindLaterSiblingToolCall") { 
 runTest("ClaudeCodeAdapterTests.abandonedGenericToolBecomesIdle") { try ClaudeCodeAdapterTests().abandonedGenericToolBecomesIdle() }
 runTest("CodexAdapterTests.explicitQuestionSurvivesMidnight") { try CodexAdapterTests().explicitQuestionSurvivesMidnight() }
 runTest("CodexAdapterTests.explicitQuestionOutputClearsWait") { try CodexAdapterTests().explicitQuestionOutputClearsWait() }
+runTest("CodexAdapterTests.asyncQuestionSurvivesMidnightBehindLongWork") { try CodexAdapterTests().asyncQuestionSurvivesMidnightBehindLongWork() }
 runTest("CodexAdapterTests.emptyInputRequestIsNotQuestionEvidence") { try CodexAdapterTests().emptyInputRequestIsNotQuestionEvidence() }
 runTest("OpenCodeAdapterTests.overnightRunningToolRemainsVisibleWithTodayCostOnly") { try OpenCodeAdapterTests().overnightRunningToolRemainsVisibleWithTodayCostOnly() }
 runTest("OpenCodeAdapterTests.invalidSchemaReportsFailure") { try OpenCodeAdapterTests().invalidSchemaReportsFailure() }
@@ -124,6 +125,7 @@ runTest("HistoricalScannerTests.largeHistoricalQuestionGetsFullFieldsAndCost") {
 runTest("HistoricalScannerTests.recentPreMidnightWorkGetsFullCost") { try HistoricalScannerTests().recentPreMidnightWorkGetsFullCost() }
 runTest("HistoricalScannerTests.activityUpdateInvalidatesHistoricalExclusion") { try HistoricalScannerTests().activityUpdateInvalidatesHistoricalExclusion() }
 runTest("HistoricalScannerTests.giantMetadataTailCannotHideAnEarlierQuestion") { try HistoricalScannerTests().giantMetadataTailCannotHideAnEarlierQuestion() }
+runTest("HistoricalScannerTests.questionBehindLargeSiblingResultsSurvivesOvernight") { try HistoricalScannerTests().questionBehindLargeSiblingResultsSurvivesOvernight() }
 runTest("HistoricalScannerTests.incompleteFinalRecordForcesFullRead") { try HistoricalScannerTests().incompleteFinalRecordForcesFullRead() }
 runTest("HistoricalScannerTests.malformedHistoricalTailReportsFullRecordLocation") { try HistoricalScannerTests().malformedHistoricalTailReportsFullRecordLocation() }
 
