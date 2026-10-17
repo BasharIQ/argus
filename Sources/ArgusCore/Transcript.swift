@@ -207,6 +207,9 @@ enum TranscriptParser {
         // Claude Code writes one entry per content block, each repeating the
         // message's usage, so bill each message id once.
         var billedMessages: Set<String> = []
+        // Parallel tool calls and their results are separate entries too, so
+        // a question stays open while a sibling call's result is the tail.
+        var openQuestions: [(id: String?, text: String)] = []
         for entry in entries {
             if entry.type == "custom-title", let title = entry.customTitle {
                 customTitle = title
@@ -230,12 +233,13 @@ enum TranscriptParser {
                 if entry.toolUseNames.isEmpty {
                     result.tail = .assistantText(isError: entry.isApiErrorMessage)
                 } else {
-                    let question = question(from: entry.blocks)
-                    result.tail = question.map {
-                        .waitingForInput(names: entry.toolUseNames, question: $0)
-                    } ?? .pendingToolUse(names: entry.toolUseNames)
+                    result.tail = .pendingToolUse(names: entry.toolUseNames)
+                    openQuestions += questions(in: entry.blocks)
                 }
             } else {
+                for case .toolResult(let id) in entry.blocks {
+                    openQuestions.removeAll { $0.id == id }
+                }
                 result.tail = entry.hasToolResult ? .toolResultArrived : .userMessage
                 if firstUserText == nil, let text = firstText(in: entry.blocks) {
                     if let args = commandArgs(in: text) {
@@ -245,6 +249,9 @@ enum TranscriptParser {
                     }
                 }
             }
+        }
+        if let open = openQuestions.first {
+            result.tail = .waitingForInput(names: ["AskUserQuestion"], question: open.text)
         }
         result.sessionName = sessionName(customTitle: customTitle, firstUserText: firstUserText)
         return result
@@ -289,16 +296,14 @@ enum TranscriptParser {
         return args.isEmpty ? nil : args
     }
 
-    private static func question(from blocks: [TranscriptBlock]) -> String? {
-        for block in blocks {
-            if case .toolUse(_, "AskUserQuestion", let input) = block {
-                if let first = input["questions"]?.arrayValue?.first {
-                    let text = first["question"]?.stringValue
-                    if let text, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return text }
-                }
-            }
+    private static func questions(in blocks: [TranscriptBlock]) -> [(id: String?, text: String)] {
+        blocks.compactMap { block in
+            guard case .toolUse(let id, "AskUserQuestion", let input) = block,
+                  let text = input["questions"]?.arrayValue?.first?["question"]?.stringValue,
+                  !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            else { return nil }
+            return (id, text)
         }
-        return nil
     }
 
     static func parseTimestamp(_ string: String?) -> Date? {
