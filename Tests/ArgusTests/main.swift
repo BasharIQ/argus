@@ -98,6 +98,8 @@ runTest("adapter.unansweredQuestionSurvivesMidnightWithTodayCostOnly") { try Cla
 runTest("ClaudeCodeAdapterTests.exitPlanModeDoesNotClaimPermissionWait") { try ClaudeCodeAdapterTests().exitPlanModeDoesNotClaimPermissionWait() }
 runTest("ClaudeCodeAdapterTests.emptyQuestionIsNotInputEvidence") { try ClaudeCodeAdapterTests().emptyQuestionIsNotInputEvidence() }
 runTest("ClaudeCodeAdapterTests.questionResultClearsWait") { try ClaudeCodeAdapterTests().questionResultClearsWait() }
+runTest("ClaudeCodeAdapterTests.questionStaysOpenAfterSiblingToolResult") { try ClaudeCodeAdapterTests().questionStaysOpenAfterSiblingToolResult() }
+runTest("ClaudeCodeAdapterTests.questionStaysOpenBehindLaterSiblingToolCall") { try ClaudeCodeAdapterTests().questionStaysOpenBehindLaterSiblingToolCall() }
 runTest("ClaudeCodeAdapterTests.abandonedGenericToolBecomesIdle") { try ClaudeCodeAdapterTests().abandonedGenericToolBecomesIdle() }
 runTest("CodexAdapterTests.explicitQuestionSurvivesMidnight") { try CodexAdapterTests().explicitQuestionSurvivesMidnight() }
 runTest("CodexAdapterTests.explicitQuestionOutputClearsWait") { try CodexAdapterTests().explicitQuestionOutputClearsWait() }

@@ -121,6 +121,28 @@ final class ClaudeCodeAdapterTests {
         try expectEqual(session.question, nil)
     }
 
+    func questionStaysOpenAfterSiblingToolResult() throws {
+        let bash = #"{"type":"tool_use","id":"b","name":"Bash","input":{}}"#
+        let ask = #"{"type":"tool_use","id":"q","name":"AskUserQuestion","input":{"questions":[{"question":"Deploy?"}]}}"#
+        try writeTranscript(age: 600, lines: [
+            assistant(age: 601, blocks: bash),
+            assistant(age: 600, blocks: ask),
+            user(age: 600, content: #"[{"type":"tool_result","tool_use_id":"b","content":"ok"}]"#),
+        ])
+        let session = try required(adapter().scan().sessions.first)
+        try expectEqual(session.state, .needsInput)
+        try expectEqual(session.question, "Deploy?")
+    }
+
+    func questionStaysOpenBehindLaterSiblingToolCall() throws {
+        let ask = #"{"type":"tool_use","id":"q","name":"AskUserQuestion","input":{"questions":[{"question":"Deploy?"}]}}"#
+        let bash = #"{"type":"tool_use","id":"b","name":"Bash","input":{}}"#
+        try writeTranscript(age: 600, lines: [assistant(age: 601, blocks: ask), assistant(age: 600, blocks: bash)])
+        let session = try required(adapter().scan().sessions.first)
+        try expectEqual(session.state, .needsInput)
+        try expectEqual(session.question, "Deploy?")
+    }
+
     func abandonedGenericToolBecomesIdle() throws {
         try writeTranscript(age: 40 * 60, lines: [assistant(age: 40 * 60, blocks: #"{"type":"tool_use","id":"bash","name":"Bash","input":{}}"#)])
         try expectEqual(adapter().scan().sessions.first?.state, .idle)
