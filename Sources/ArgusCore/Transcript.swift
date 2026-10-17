@@ -122,6 +122,10 @@ struct ParsedTranscript: Equatable, Sendable {
     /// session headers (`parentSession`). Argus lists main sessions only,
     /// so the scanner skips transcripts with this set.
     var isChildSession = false
+    /// Whether a question asked before this data could still be open at its
+    /// end. The scanner screens old files from their final bytes, and while
+    /// this holds it must rule out a question call in the bytes before them.
+    var mayInheritOpenQuestion = false
     /// Codex keys a thread by `session_meta.id` and may split it across
     /// several rollout files. Child threads (Codex subagents and guardian
     /// reviews, Claude Code sidechains) name their parent; their usage and
@@ -210,6 +214,10 @@ enum TranscriptParser {
         // Parallel tool calls and their results are separate entries too, so
         // a question stays open while a sibling call's result is the tail.
         var openQuestions: [(id: String?, text: String)] = []
+        // The API takes the next request only once every tool call has its
+        // result, so a new message settles every question asked before it.
+        result.mayInheritOpenQuestion = true
+        var previousMessageID: String?
         for entry in entries {
             if entry.type == "custom-title", let title = entry.customTitle {
                 customTitle = title
@@ -230,6 +238,10 @@ enum TranscriptParser {
                 }
             }
             if entry.type == "assistant" {
+                if let id = entry.messageID {
+                    if let previous = previousMessageID, previous != id { result.mayInheritOpenQuestion = false }
+                    previousMessageID = id
+                }
                 if entry.toolUseNames.isEmpty {
                     result.tail = .assistantText(isError: entry.isApiErrorMessage)
                 } else {

@@ -17,7 +17,9 @@ public final class CodexAdapter: HarnessAdapter, @unchecked Sendable {
         let base = root ?? home.appendingPathComponent(".codex")
         self.root = base.appendingPathComponent("sessions")
         self.indexURL = base.appendingPathComponent("session_index.jsonl")
-        self.scanner = SessionScanner(root: self.root)
+        self.scanner = SessionScanner(root: self.root, questionCallMarkers: [
+            #""name":"request_user_input"#, #""name":"functions.request_user_input"#,
+        ])
         self.clock = clock
     }
 
@@ -84,6 +86,7 @@ enum CodexSessionParser {
         var firstUserText: String?
         var sawMeta = false
         var openQuestion: OpenQuestion?
+        result.mayInheritOpenQuestion = true
         let decoded = JSONLines.decode(RawEntry.self, data: data)
         result.malformedLines = decoded.malformedLines
         for raw in decoded.records {
@@ -114,6 +117,7 @@ enum CodexSessionParser {
                     case "user":
                         result.tail = .userMessage
                         openQuestion = nil
+                        result.mayInheritOpenQuestion = false
                         if firstUserText == nil, let text = text(from: payload["content"]).first,
                            !text.hasPrefix("<") {
                             firstUserText = text

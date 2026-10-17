@@ -7,7 +7,9 @@ public final class ClaudeCodeAdapter: HarnessAdapter, @unchecked Sendable {
     public init(root: URL? = nil, clock: @escaping () -> Date = { Date() }) {
         self.scanner = SessionScanner(
             root: root ?? FileManager.default.homeDirectoryForCurrentUser
-                .appendingPathComponent(".claude/projects")
+                .appendingPathComponent(".claude/projects"),
+            // Tool definitions also carry the name, but only a call follows it with input.
+            questionCallMarkers: [#""name":"AskUserQuestion","input":"#]
         )
         self.clock = clock
     }

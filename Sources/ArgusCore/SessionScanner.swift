@@ -2,12 +2,15 @@ import Foundation
 
 final class SessionScanner: @unchecked Sendable {
     private let root: URL
+    /// Raw bytes that start a question tool call in this harness's transcripts.
+    private let questionCallMarkers: [Data]
     private let lock = NSLock()
     private var cache: [String: (mtime: Date, parsed: ParsedTranscript)] = [:]
     private var excludedHistory: [String: (mtime: Date, dayStart: Date, screenedAt: Date)] = [:]
 
-    init(root: URL) {
+    init(root: URL, questionCallMarkers: [String] = []) {
         self.root = root
+        self.questionCallMarkers = questionCallMarkers.map { Data($0.utf8) }
     }
 
     func scan(
@@ -187,7 +190,25 @@ final class SessionScanner: @unchecked Sendable {
               parsed.tail != .noConversation, let last = parsed.lastActivity,
               last < dayStart else { return false }
         let state = SessionResolver.resolve(tail: parsed.tail, lastActivity: last, now: now)
-        return !SessionResolver.isEligible(state: state, lastActivity: last, now: now)
+        guard !SessionResolver.isEligible(state: state, lastActivity: last, now: now) else { return false }
+        guard parsed.mayInheritOpenQuestion else { return true }
+        return try !containsQuestionCall(handle, before: length - UInt64(tail.count))
+    }
+
+    private func containsQuestionCall(_ handle: FileHandle, before end: UInt64) throws -> Bool {
+        guard end > 0 else { return false }
+        guard let longest = questionCallMarkers.map(\.count).max() else { return true }
+        try handle.seek(toOffset: 0)
+        var position: UInt64 = 0
+        var carry = Data()
+        while position < end {
+            guard let chunk = try handle.read(upToCount: Int(min(4 << 20, end - position))), !chunk.isEmpty else { break }
+            position += UInt64(chunk.count)
+            let haystack = carry + chunk
+            if questionCallMarkers.contains(where: { haystack.range(of: $0) != nil }) { return true }
+            carry = haystack.suffix(longest - 1)
+        }
+        return false
     }
 }
 
